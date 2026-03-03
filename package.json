@@ -1,0 +1,36 @@
+{
+  "name": "bollywood-twitter-bot",
+  "version": "2.0.0",
+  "description": "Automated Bollywood movie and web series review bot for Twitter with poster images",
+  "main": "api/bot.js",
+  "scripts": {
+    "dev": "node api/bot.js",
+    "test": "node api/bot.js",
+    "vercel-build": "echo 'Build completed'"
+  },
+  "dependencies": {
+    "@ai-sdk/perplexity": "^1.1.9",
+    "ai": "^4.3.16",
+    "dotenv": "^16.5.0",
+    "twitter-api-v2": "^1.23.2",
+    "sharp": "^0.32.6",
+    "axios": "^1.6.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": [
+    "twitter-bot",
+    "bollywood",
+    "movie-reviews",
+    "automation",
+    "vercel",
+    "hindi-movies"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "your-repo-url"
+  }
+}

@@ -1,0 +1,13 @@
+  # Node modules
+node_modules/
+
+# Environment variables
+.env
+.wwebjs_cache
+# Build directories
+dist/
+build/.
+.vercel/
+.wwebjs_auth/
+.wwebjs_auth_custom/
+.vercel
