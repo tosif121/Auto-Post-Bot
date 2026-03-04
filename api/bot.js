@@ -1,7 +1,7 @@
 // api/bot.js — Vercel serverless handler
 // Called every hour by Vercel cron
 
-const runBot = require('../lib/bot');
+const runBot = require('../bot');
 
 module.exports = async (req, res) => {
   // Protect endpoint with a secret
