@@ -1,253 +1,407 @@
 // ================================================================
-//  X (Twitter) Auto-Post Bot
-//  Topics : World News · India · Cricket · Technology · Finance
-//  AI     : Perplexity AI (Sonar model)
-//  Stack  : Node.js · twitter-api-v2 · fetch · rss-parser
+//  X Post Generator → Notion CMS
+//  Generates 24+ viral posts/hour across all categories
+//  You pick & copy-paste the best ones to post manually
+//  AI: OpenRouter (free models) | Storage: Notion Database
 // ================================================================
 
-import 'dotenv/config';
-import { TwitterApi } from 'twitter-api-v2';
-import Parser from 'rss-parser';
-import cron from 'node-cron';
+'use strict';
 
-// ─── CONFIG ─────────────────────────────────────────────────────
+require('dotenv').config();
+const { Client } = require('@notionhq/client');
+const Parser = require('rss-parser');
+const fetch = require('node-fetch');
+
+// ─── CONFIG ──────────────────────────────────────────────────────
 const CONFIG = {
-  X_API_KEY: process.env.X_API_KEY || 'YOUR_X_API_KEY',
-  X_API_SECRET: process.env.X_API_SECRET || 'YOUR_X_API_SECRET',
-  X_ACCESS_TOKEN: process.env.X_ACCESS_TOKEN || 'YOUR_X_ACCESS_TOKEN',
-  X_ACCESS_SECRET: process.env.X_ACCESS_SECRET || 'YOUR_X_ACCESS_SECRET',
-  PPLX_API_KEY: process.env.PPLX_API_KEY || 'YOUR_PPLX_API_KEY',
-  POSTS_PER_RUN: 3,
-  CRON_SCHEDULE: '0 */3 * * *', // every 3 hours = 8 posts/day
-  DRY_RUN: process.env.DRY_RUN === 'true' || false,
+  NOTION_API_KEY: process.env.NOTION_API_KEY,
+  NOTION_DATABASE_ID: process.env.NOTION_DATABASE_ID,
+  OPENROUTER_API_KEY: process.env.OPENROUTER_API_KEY,
+  AI_MODEL: 'openai/gpt-4o-mini',
+  // How many posts to generate per category per run
+  POSTS_PER_CATEGORY: 3,
 };
+
+// ─── CATEGORY SCHEDULE (weight = posts per run) ──────────────────
+const CATEGORIES = [
+  { category: 'cricket', weight: 2, emoji: '🏏' },
+  { category: 'tech', weight: 2, emoji: '💻' },
+  { category: 'india', weight: 2, emoji: '🇮🇳' },
+  { category: 'bollywood', weight: 2, emoji: '🎬' },
+  { category: 'ott', weight: 2, emoji: '📺' },
+  { category: 'reality_shows', weight: 2, emoji: '⭐' },
+  { category: 'finance', weight: 1, emoji: '📈' },
+  { category: 'world', weight: 1, emoji: '🌍' },
+];
 
 // ─── RSS FEEDS ───────────────────────────────────────────────────
 const FEEDS = {
-  world: [
-    { url: 'http://feeds.bbci.co.uk/news/world/rss.xml', tag: 'World' },
-    { url: 'https://www.aljazeera.com/xml/rss/all.xml', tag: 'World' },
-    { url: 'https://rss.nytimes.com/services/xml/rss/nyt/World.xml', tag: 'Geopolitics' },
-  ],
-  india: [
-    { url: 'https://feeds.feedburner.com/ndtvnews-top-stories', tag: 'India' },
-    { url: 'https://timesofindia.indiatimes.com/rssfeeds/296589292.cms', tag: 'India' },
-    { url: 'https://www.thehindu.com/news/feeder/default.rss', tag: 'India' },
-    { url: 'https://economictimes.indiatimes.com/rssfeedsdefault.cms', tag: 'Economy' },
-  ],
   cricket: [
-    { url: 'https://www.cricbuzz.com/rss/cricket-news', tag: 'Cricket' },
-    { url: 'https://www.espncricinfo.com/rss/content/story/feeds/0.xml', tag: 'Cricket' },
-    { url: 'https://sports.ndtv.com/cricket/rss', tag: 'Cricket' },
+    'https://www.cricbuzz.com/rss/cricket-news',
+    'https://www.espncricinfo.com/rss/content/story/feeds/0.xml',
+    'https://sports.ndtv.com/cricket/rss',
   ],
   tech: [
-    { url: 'https://techcrunch.com/feed/', tag: 'Technology' },
-    { url: 'https://www.theverge.com/rss/index.xml', tag: 'Technology' },
-    { url: 'https://feeds.feedburner.com/ndtvgadgets-latest', tag: 'Technology' },
+    'https://feeds.feedburner.com/Techcrunch',
+    'https://www.theverge.com/rss/index.xml',
+    'https://thenextweb.com/feed/',
+    'https://feeds.arstechnica.com/arstechnica/index',
+  ],
+  india: [
+    'https://feeds.feedburner.com/ndtvnews-top-stories',
+    'https://timesofindia.indiatimes.com/rssfeeds/296589292.cms',
+    'https://www.thehindu.com/news/feeder/default.rss',
+    'https://indianexpress.com/feed/',
+  ],
+  bollywood: [
+    'https://www.pinkvilla.com/rss.xml',
+    'https://www.bollywoodhungama.com/rss/news.xml',
+    'https://www.filmfare.com/rss/news.xml',
+    'https://feeds.feedburner.com/ndtvmovies-latest',
+  ],
+  ott: [
+    // OTT: Netflix/Prime/Hotstar content news
+    'https://www.pinkvilla.com/rss.xml',
+    'https://www.filmfare.com/rss/news.xml',
+    'https://www.gadgets360.com/rss/feeds/news', // covers streaming tech
+    'https://www.india.com/entertainment/web-series/feed/',
+  ],
+  reality_shows: [
+    'https://www.tellychakkar.com/rss.xml',
+    'https://www.india.com/entertainment/television/feed/',
+    'https://www.pinkvilla.com/rss.xml',
   ],
   finance: [
-    { url: 'https://economictimes.indiatimes.com/rssfeedsdefault.cms', tag: 'Economy' },
-    { url: 'https://www.moneycontrol.com/rss/business.xml', tag: 'Economy' },
-    { url: 'https://www.livemint.com/rss/markets', tag: 'Economy' },
+    'https://economictimes.indiatimes.com/markets/rssfeeds/1977021501.cms',
+    'https://www.moneycontrol.com/rss/marketreports.xml',
+    'https://www.livemint.com/rss/markets',
+  ],
+  world: [
+    'http://feeds.bbci.co.uk/news/world/rss.xml',
+    'https://www.aljazeera.com/xml/rss/all.xml',
+    'https://rss.nytimes.com/services/xml/rss/nyt/World.xml',
   ],
 };
-
-// ─── CATEGORY WEIGHTS (posts per day) ────────────────────────────
-const CATEGORY_SCHEDULE = [
-  { category: 'cricket', weight: 4 },
-  { category: 'tech', weight: 3 },
-  { category: 'finance', weight: 2 },
-  { category: 'india', weight: 2 },
-  { category: 'world', weight: 1 },
-];
 
 // ─── AI PERSONAS ─────────────────────────────────────────────────
 const PERSONAS = {
-  Cricket: `You are a passionate Indian cricket fanatic and sports journalist on X.
-Write punchy, emotionally charged cricket tweets. Use cricket terminology, player names, match context.
-Hashtags: #Cricket #TeamIndia #IPL #INDvXXX #ViratKohli etc.`,
-
-  Technology: `You are a slick, futurist tech commentator on X based in India.
-Write high-engagement tweets about AI, startups, gadgets, Elon Musk, and exponential tech.
-Give bold predictions. Sound like an insider shaping the future.
-Hashtags: #Tech #AI #Startups #Innovation`,
-
-  Economy: `You are a sharp finance and crypto commentator on X based in India.
-Write engaging tweets on markets, Indian economy, startups, and making money.
-Use data points. Sound like a wealthy, smart investor.
-Hashtags: #Economy #StockMarket #India #Business`,
-
-  India: `You are a sharp, opinionated Indian news commentator on X.
-Write insightful tweets on Indian politics, economy, and social issues.
-Sound like an educated Indian citizen with a strong take.`,
-
-  World: `You are a globally aware geopolitical commentator on X based in India.
-Write sharp takes on world events, wars, diplomacy with an Indian angle when relevant.`,
-
-  Geopolitics: `You are a geopolitics analyst on X. Bold, factual, engaging takes on global power dynamics.`,
+  cricket: {
+    voice: 'Passionate Indian cricket fan and sports journalist',
+    style: 'Punchy, emotional, uses cricket lingo and player names',
+    hashtags: '#Cricket #TeamIndia #IPL #INDvXXX #ViratKohli #Rohit',
+  },
+  tech: {
+    voice: 'Sharp tech commentator followed by devs, founders, and techies',
+    style: 'Insightful, opinionated, curious — sometimes snarky about Big Tech',
+    hashtags: '#AI #Tech #Startups #OpenAI #IndianTech #BuildInIndia',
+  },
+  india: {
+    voice: 'Opinionated Indian news commentator with strong civic takes',
+    style: 'Bold, direct, sounds like an educated citizen not a news anchor',
+    hashtags: '#India #BJP #Congress #Modi #IndianPolitics #Bharat',
+  },
+  bollywood: {
+    voice: 'Trendy Bollywood entertainment commentator with desi flair',
+    style: 'Exciting, dramatic, fun — mix in Hindi phrases like "Kya scene hai!"',
+    hashtags: '#Bollywood #BoxOffice #Bollywood #ShahRukhKhan #NewRelease',
+  },
+  ott: {
+    voice: 'Binge-watching OTT enthusiast who watches everything on Netflix, Prime, Hotstar',
+    style: 'Excited, opinionated reviews and hot takes. Drop series names boldly.',
+    hashtags: '#OTT #Netflix #PrimeVideo #Hotstar #WebSeries #MustWatch',
+  },
+  reality_shows: {
+    voice: 'Drama-loving Indian reality TV addict',
+    style: 'Full of reactions, opinions, fan theories. "Game changer!", "Vote karoo!"',
+    hashtags: '#BiggBoss #SharkTankIndia #KBC #IndianIdol #RealityTV #Jhalak',
+  },
+  finance: {
+    voice: 'Confident retail investor and finance commentator for Indian markets',
+    style: 'Data-driven, use numbers when available. Smart analyst energy.',
+    hashtags: '#Nifty #Sensex #StockMarket #Finance #Economy #RBI #Investing',
+  },
+  world: {
+    voice: 'Globally aware geopolitical commentator based in India',
+    style: 'Sharp takes on wars, diplomacy, power shifts — with Indian angle',
+    hashtags: '#Geopolitics #WorldNews #USA #China #Russia #GlobalAffairs',
+  },
 };
 
 // ─── CLIENTS ─────────────────────────────────────────────────────
-const twitter = new TwitterApi({
-  appKey: CONFIG.X_API_KEY,
-  appSecret: CONFIG.X_API_SECRET,
-  accessToken: CONFIG.X_ACCESS_TOKEN,
-  accessSecret: CONFIG.X_ACCESS_SECRET,
-});
+const notion = new Client({ auth: CONFIG.NOTION_API_KEY });
+const rssParser = new Parser({ timeout: 8000 });
 
-const parser = new Parser({ timeout: 8000 });
-const postedTitles = new Set();
-
-// ─── FETCH FEEDS ─────────────────────────────────────────────────
-async function fetchFeed(feedConfig) {
+// ─── FETCH ONE FEED ──────────────────────────────────────────────
+async function fetchFeed(url, tag) {
   try {
-    const feed = await parser.parseURL(feedConfig.url);
-    return feed.items.slice(0, 6).map((item) => ({
+    const feed = await rssParser.parseURL(url);
+    return feed.items.slice(0, 8).map((item) => ({
       title: item.title?.trim() || '',
-      summary: item.contentSnippet?.trim() || '',
+      summary: item.contentSnippet?.trim() || item.summary?.trim() || '',
       link: item.link || '',
-      tag: feedConfig.tag,
+      tag,
     }));
   } catch {
     return [];
   }
 }
 
+// ─── FETCH ALL ITEMS FOR A CATEGORY ──────────────────────────────
 async function fetchCategory(categoryName) {
-  const feedList = FEEDS[categoryName] || [];
-  const results = await Promise.allSettled(feedList.map(fetchFeed));
-  return results
+  const urls = FEEDS[categoryName] || [];
+  const results = await Promise.allSettled(urls.map((url) => fetchFeed(url, categoryName)));
+  const items = results
     .filter((r) => r.status === 'fulfilled')
     .flatMap((r) => r.value)
-    .filter((item) => item.title && !postedTitles.has(item.title))
+    .filter((item) => item.title);
+  // Deduplicate by title
+  const seen = new Set();
+  return items
+    .filter((item) => {
+      if (seen.has(item.title)) return false;
+      seen.add(item.title);
+      return true;
+    })
     .sort(() => Math.random() - 0.5);
 }
 
-// ─── PERPLEXITY TWEET GENERATOR ───────────────────────────────────────
-async function generateTweet(item) {
-  const persona = PERSONAS[item.tag] || PERSONAS['World'];
-  const label =
-    {
-      Cricket: '🏏 CRICKET',
-      Technology: '🤖 TECHNOLOGY',
-      India: '🇮🇳 INDIA',
-      World: '🌍 WORLD',
-      Geopolitics: '🌍 GEOPOLITICS',
-      Economy: '📈 ECONOMY',
-    }[item.tag] || '📰 NEWS';
+// ─── GENERATE MULTIPLE TWEETS FOR ONE NEWS ITEM ──────────────────
+async function generateTweets(item, count = 3) {
+  const persona = PERSONAS[item.tag] || PERSONAS.world;
+  const catInfo = CATEGORIES.find((c) => c.category === item.tag) || {};
 
-  const prompt = `Convert this into ONE viral X (Twitter) post.
+  const prompt = `You are a ${persona.voice} on X (Twitter).
+Style: ${persona.style}
+Suggested hashtags: ${persona.hashtags}
 
-STRICT RULES:
-- MAX 260 characters including hashtags
-- Start with a strong HOOK: shocking fact, bold opinion, or intriguing question
-- Add 1 sentence of your own take
-- End with 2-3 hashtags
-- Write like a smart opinionated human — NOT a news bot
-- Return ONLY the tweet text, nothing else
+Generate ${count} DIFFERENT viral X (Twitter) posts about this news.
+Each post must:
+- Be MAX 260 characters including hashtags
+- Start with a different strong HOOK each time (shocking stat / bold opinion / punchy question / hot take)
+- Sound like a real human — NOT a news bot
+- Mentions today's date or day context naturally in the post.
+- Include 2-3 relevant hashtags at the end
+- Be ready to copy-paste directly
 
-${label}:
-Title: ${item.title}
-Context: ${item.summary?.slice(0, 300) || ''}`;
+News headline: ${item.title}
+Context: ${item.summary?.slice(0, 400) || ''}
+
+Return ONLY a JSON array of ${count} tweet strings, no explanation:
+["tweet 1 here", "tweet 2 here", "tweet 3 here"]`;
 
   try {
-    const response = await fetch('https://api.perplexity.ai/chat/completions', {
+    const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${CONFIG.PPLX_API_KEY}`,
+        Authorization: `Bearer ${CONFIG.OPENROUTER_API_KEY}`,
         'Content-Type': 'application/json',
+        'HTTP-Referer': 'https://xbot.vercel.app',
+        'X-Title': 'X Post Generator',
       },
       body: JSON.stringify({
-        model: 'sonar',
-        messages: [
-          { role: 'system', content: persona },
-          { role: 'user', content: prompt },
-        ],
+        model: CONFIG.AI_MODEL,
+        messages: [{ role: 'user', content: prompt }],
+        max_tokens: 600,
+        temperature: 0.9,
       }),
     });
 
-    if (!response.ok) {
-      throw new Error(`Perplexity API Error: ${response.status} ${response.statusText}`);
+    if (!res.ok) {
+      console.error('⚠️  OpenRouter error:', res.status, await res.text());
+      return [];
     }
 
-    const data = await response.json();
-    let tweet = data.choices[0].message.content.trim();
-    tweet = tweet.replace(/^["'`]|["'`]$/g, '').trim();
-    return tweet.length > 0 && tweet.length <= 280 ? tweet : null;
+    const data = await res.json();
+    const content = data.choices?.[0]?.message?.content?.trim() || '';
+
+    // Parse JSON array from response
+    const match = content.match(/\[[\s\S]*\]/);
+    if (!match) {
+      console.error('⚠️  Failed to parse JSON from AI response:', content);
+      return [];
+    }
+
+    const tweets = JSON.parse(match[0]);
+    return tweets
+      .filter((t) => typeof t === 'string' && t.length > 10 && t.length <= 280)
+      .map((t) => t.replace(/^["'`]|["'`]$/g, '').trim());
   } catch (err) {
-    console.error(`❌ Perplexity error [${item.tag}]:`, err.message);
-    return null;
+    console.error('⚠️  Fetch error in generateTweets:', err.message);
+    return [];
   }
 }
 
-// ─── POST TO X ───────────────────────────────────────────────────
-async function postTweet(text) {
-  if (CONFIG.DRY_RUN) {
-    console.log(`\n🧪 DRY RUN [${text.length}ch]: ${text}`);
-    return;
+// ─── SAVE POST BATCH TO NOTION ────────────────────────────────────
+async function saveToNotion(posts) {
+  const saved = [];
+  for (const post of posts) {
+    try {
+      const page = await notion.pages.create({
+        parent: { database_id: CONFIG.NOTION_DATABASE_ID },
+        properties: {
+          // Title = the tweet text (easy to read & copy)
+          Tweet: {
+            title: [{ text: { content: post.tweet } }],
+          },
+          Category: {
+            select: { name: post.category },
+          },
+          'Source Headline': {
+            rich_text: [{ text: { content: post.headline.slice(0, 200) } }],
+          },
+          Characters: {
+            number: post.tweet.length,
+          },
+          Status: {
+            select: { name: '⏳ Review' },
+          },
+          Score: {
+            select: { name: post.score },
+          },
+          'Generated At': {
+            date: { start: new Date().toISOString() },
+          },
+        },
+      });
+      saved.push(page.id);
+    } catch (err) {
+      console.error('Notion save error:', err.message);
+    }
+    // Small delay to avoid Notion rate limits
+    await new Promise((r) => setTimeout(r, 350));
   }
-  return await twitter.v2.tweet(text);
+  return saved;
 }
 
-// ─── PICK CATEGORIES FOR THIS RUN ────────────────────────────────
-function pickCategoriesForRun(count) {
-  const pool = CATEGORY_SCHEDULE.flatMap(({ category, weight }) => Array(weight).fill(category)).sort(
-    () => Math.random() - 0.5,
-  );
-  return [...new Set(pool)].slice(0, count);
+// ─── SCORE TWEET QUALITY ─────────────────────────────────────────
+function scoreTweet(tweet) {
+  let score = 0;
+  // Has hashtags
+  if (/#\w+/.test(tweet)) score += 2;
+  // Good length (200-260 chars is sweet spot)
+  if (tweet.length >= 180 && tweet.length <= 260) score += 2;
+  // Has question mark (questions get engagement)
+  if (tweet.includes('?')) score += 1;
+  // Has numbers/stats
+  if (/\d+/.test(tweet)) score += 1;
+  // Has emoji
+  if (/\p{Emoji}/u.test(tweet)) score += 1;
+  // Not too short
+  if (tweet.length < 80) score -= 2;
+
+  if (score >= 5) return '🔥 High';
+  if (score >= 3) return '✅ Good';
+  return '📝 Average';
+}
+
+// ─── CLEAR OLD POSTS (OLDER THAN 7 DAYS) ─────────────────────────
+async function cleanOldPosts() {
+  const sevenDaysAgo = new Date();
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+  const dateString = sevenDaysAgo.toISOString();
+
+  console.log(`\n🧹 Cleaning up posts older than 7 days (before ${dateString})...`);
+
+  try {
+    const response = await notion.databases.query({
+      database_id: CONFIG.NOTION_DATABASE_ID,
+      filter: {
+        timestamp: 'created_time',
+        created_time: {
+          before: dateString,
+        },
+      },
+    });
+
+    const pagesToDelete = response.results;
+    if (pagesToDelete.length === 0) {
+      console.log('  ✅ No old posts to clean up.');
+      return 0;
+    }
+
+    console.log(`  🗑️  Found ${pagesToDelete.length} old posts. Archiving...`);
+
+    let deletedCount = 0;
+    for (const page of pagesToDelete) {
+      await notion.pages.update({
+        page_id: page.id,
+        archived: true, // Notion "deletes" pages by archiving them
+      });
+      deletedCount++;
+      // Sleep to avoid rate limits
+      await new Promise((r) => setTimeout(r, 350));
+    }
+
+    console.log(`  ✅ Successfully removed ${deletedCount} old posts.`);
+    return deletedCount;
+  } catch (error) {
+    console.error('  ❌ Error cleaning up old posts:', error.body || error.message);
+    return 0;
+  }
 }
 
 // ─── MAIN RUN ────────────────────────────────────────────────────
 async function runBot() {
   const time = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
-  console.log(`\n${'─'.repeat(55)}`);
-  console.log(`🤖 Bot run — ${time} IST`);
+  console.log(`\n${'═'.repeat(55)}`);
+  console.log(`🤖 Generator run | ${time} IST`);
+  console.log(`${'═'.repeat(55)}`);
 
-  const categories = pickCategoriesForRun(CONFIG.POSTS_PER_RUN);
-  console.log(`📋 Queue: ${categories.join(' · ')}`);
+  // 1. Clean up old posts first
+  await cleanOldPosts();
 
-  let posted = 0;
-  for (const category of categories) {
+  const allPosts = [];
+  let totalFetch = 0;
+
+  for (const { category, weight, emoji } of CATEGORIES) {
+    const postsTarget = weight * CONFIG.POSTS_PER_CATEGORY;
+    console.log(`\n${emoji} [${category.toUpperCase()}] — targeting ${postsTarget} posts`);
+
     const items = await fetchCategory(category);
-    const item = items[0];
-    if (!item) {
-      console.log(`⚠️  No items for [${category}]`);
+    if (!items.length) {
+      console.log(`  ⚠️  No RSS items found`);
       continue;
     }
 
-    const tweet = await generateTweet(item);
-    if (!tweet) {
-      console.log(`⚠️  Gen failed for [${category}]`);
-      continue;
-    }
+    // Pick top N items based on weight
+    const selectedItems = items.slice(0, weight * 2);
+    let categoryPosts = 0;
 
-    try {
-      await postTweet(tweet);
-      postedTitles.add(item.title);
-      posted++;
-      console.log(`✅ [${item.tag}] (${tweet.length}ch): ${tweet}`);
-      if (posted < categories.length) await new Promise((r) => setTimeout(r, 45_000));
-    } catch (err) {
-      if (err.message?.includes('duplicate')) {
-        postedTitles.add(item.title);
-        console.log(`⚠️  Duplicate skipped [${category}]`);
-      } else {
-        console.error(`❌ Failed [${category}]: ${err.message}`);
+    for (const item of selectedItems) {
+      if (categoryPosts >= postsTarget) break;
+
+      const tweetsNeeded = Math.min(3, postsTarget - categoryPosts);
+      const tweets = await generateTweets(item, tweetsNeeded);
+
+      for (const tweet of tweets) {
+        if (categoryPosts >= postsTarget) break;
+        allPosts.push({
+          tweet,
+          category,
+          headline: item.title,
+          score: scoreTweet(tweet),
+        });
+        categoryPosts++;
+        totalFetch++;
       }
+
+      // Avoid hitting OpenRouter rate limits
+      await new Promise((r) => setTimeout(r, 1200));
     }
+
+    console.log(`  ✅ Generated ${categoryPosts} posts`);
   }
-  console.log(`📊 Done: ${posted}/${categories.length} posted`);
+
+  console.log(`\n📝 Saving ${allPosts.length} posts to Notion...`);
+  const saved = await saveToNotion(allPosts);
+  console.log(`✅ Saved ${saved.length} posts to Notion`);
+  console.log(`\n📊 Run complete | ${allPosts.length} posts generated`);
+
+  return { generated: allPosts.length, saved: saved.length };
 }
 
-// ─── START ───────────────────────────────────────────────────────
-console.log(`
-╔══════════════════════════════════════════╗
-║   🚀  X Bot — Perplexity AI Edition      ║
-║   Cricket · Tech · Finance               ║
-║   India · World · Economy               ║
-║   Posts ~8/day  |  DRY_RUN: ${CONFIG.DRY_RUN}        ║
-╚══════════════════════════════════════════╝
-`);
+module.exports = runBot;
 
-runBot();
-cron.schedule(CONFIG.CRON_SCHEDULE, runBot);
+if (require.main === module) {
+  runBot().catch(console.error);
+}
