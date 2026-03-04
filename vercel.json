@@ -11,5 +11,5 @@
       "destination": "/api/bot"
     }
   ],
-  "crons": [{ "path": "/api/bot", "schedule": "0 * * * *" }]
+  "crons": [{ "path": "/api/bot", "schedule": "0 0 * * *" }]
 }
