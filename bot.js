@@ -24,106 +24,47 @@ const CONFIG = {
 
 // ─── CATEGORY SCHEDULE (weight = posts per run) ──────────────────
 const CATEGORIES = [
-  { category: 'cricket', weight: 2, emoji: '🏏' },
-  { category: 'tech', weight: 2, emoji: '💻' },
-  { category: 'india', weight: 2, emoji: '🇮🇳' },
-  { category: 'bollywood', weight: 2, emoji: '🎬' },
-  { category: 'ott', weight: 2, emoji: '📺' },
-  { category: 'reality_shows', weight: 2, emoji: '⭐' },
-  { category: 'finance', weight: 1, emoji: '📈' },
-  { category: 'world', weight: 1, emoji: '🌍' },
+  { category: 'tech', weight: 3, emoji: '💻' },
+  { category: 'ai', weight: 3, emoji: '🤖' },
+  { category: 'coding', weight: 3, emoji: '👨‍💻' },
 ];
 
 // ─── RSS FEEDS ───────────────────────────────────────────────────
 const FEEDS = {
-  cricket: [
-    'https://www.cricbuzz.com/rss/cricket-news',
-    'https://www.espncricinfo.com/rss/content/story/feeds/0.xml',
-    'https://sports.ndtv.com/cricket/rss',
-  ],
   tech: [
     'https://feeds.feedburner.com/Techcrunch',
     'https://www.theverge.com/rss/index.xml',
     'https://thenextweb.com/feed/',
     'https://feeds.arstechnica.com/arstechnica/index',
+    'https://feeds.feedburner.com/venturebeat/SZYF',
   ],
-  india: [
-    'https://feeds.feedburner.com/ndtvnews-top-stories',
-    'https://timesofindia.indiatimes.com/rssfeeds/296589292.cms',
-    'https://www.thehindu.com/news/feeder/default.rss',
-    'https://indianexpress.com/feed/',
+  ai: [
+    'https://techcrunch.com/category/artificial-intelligence/feed/',
+    'https://www.wired.com/feed/category/ai/latest/rss',
+    'https://blogs.nvidia.com/feed/',
+    'https://www.artificialintelligence-news.com/feed/',
+    'https://www.technologyreview.com/topic/artificial-intelligence/feed/',
+    'https://openai.com/blog/rss.xml',
   ],
-  bollywood: [
-    'https://www.pinkvilla.com/rss.xml',
-    'https://www.bollywoodhungama.com/rss/news.xml',
-    'https://www.filmfare.com/rss/news.xml',
-    'https://feeds.feedburner.com/ndtvmovies-latest',
-  ],
-  ott: [
-    // OTT: Netflix/Prime/Hotstar content news
-    'https://www.pinkvilla.com/rss.xml',
-    'https://www.filmfare.com/rss/news.xml',
-    'https://www.gadgets360.com/rss/feeds/news', // covers streaming tech
-    'https://www.india.com/entertainment/web-series/feed/',
-  ],
-  reality_shows: [
-    'https://www.tellychakkar.com/rss.xml',
-    'https://www.india.com/entertainment/television/feed/',
-    'https://www.pinkvilla.com/rss.xml',
-  ],
-  finance: [
-    'https://economictimes.indiatimes.com/markets/rssfeeds/1977021501.cms',
-    'https://www.moneycontrol.com/rss/marketreports.xml',
-    'https://www.livemint.com/rss/markets',
-  ],
-  world: [
-    'http://feeds.bbci.co.uk/news/world/rss.xml',
-    'https://www.aljazeera.com/xml/rss/all.xml',
-    'https://rss.nytimes.com/services/xml/rss/nyt/World.xml',
-  ],
+  coding: ['https://dev.to/feed', 'https://www.freecodecamp.org/news/rss/', 'https://hackernoon.com/feed'],
 };
 
 // ─── AI PERSONAS ─────────────────────────────────────────────────
 const PERSONAS = {
-  cricket: {
-    voice: 'Passionate Indian cricket fan and sports journalist',
-    style: 'Punchy, emotional, uses cricket lingo and player names',
-    hashtags: '#Cricket #TeamIndia #IPL #INDvXXX #ViratKohli #Rohit',
-  },
   tech: {
     voice: 'Sharp tech commentator followed by devs, founders, and techies',
     style: 'Insightful, opinionated, curious — sometimes snarky about Big Tech',
-    hashtags: '#AI #Tech #Startups #OpenAI #IndianTech #BuildInIndia',
+    hashtags: '#TechNews #TechTweeps #Startups #Innovation',
   },
-  india: {
-    voice: 'Opinionated Indian news commentator with strong civic takes',
-    style: 'Bold, direct, sounds like an educated citizen not a news anchor',
-    hashtags: '#India #BJP #Congress #Modi #IndianPolitics #Bharat',
+  ai: {
+    voice: 'AI researcher and enthusiast who stays on the absolute bleeding edge',
+    style: 'Analytical, highlighting the future implications of AI models, excited',
+    hashtags: '#AI #MachineLearning #GenerativeAI #ArtificialIntelligence',
   },
-  bollywood: {
-    voice: 'Trendy Bollywood entertainment commentator with desi flair',
-    style: 'Exciting, dramatic, fun — mix in Hindi phrases like "Kya scene hai!"',
-    hashtags: '#Bollywood #BoxOffice #Bollywood #ShahRukhKhan #NewRelease',
-  },
-  ott: {
-    voice: 'Binge-watching OTT enthusiast who watches everything on Netflix, Prime, Hotstar',
-    style: 'Excited, opinionated reviews and hot takes. Drop series names boldly.',
-    hashtags: '#OTT #Netflix #PrimeVideo #Hotstar #WebSeries #MustWatch',
-  },
-  reality_shows: {
-    voice: 'Drama-loving Indian reality TV addict',
-    style: 'Full of reactions, opinions, fan theories. "Game changer!", "Vote karoo!"',
-    hashtags: '#BiggBoss #SharkTankIndia #KBC #IndianIdol #RealityTV #Jhalak',
-  },
-  finance: {
-    voice: 'Confident retail investor and finance commentator for Indian markets',
-    style: 'Data-driven, use numbers when available. Smart analyst energy.',
-    hashtags: '#Nifty #Sensex #StockMarket #Finance #Economy #RBI #Investing',
-  },
-  world: {
-    voice: 'Globally aware geopolitical commentator based in India',
-    style: 'Sharp takes on wars, diplomacy, power shifts — with Indian angle',
-    hashtags: '#Geopolitics #WorldNews #USA #China #Russia #GlobalAffairs',
+  coding: {
+    voice: 'Senior Software Engineer sharing coding tips and dev news',
+    style: 'Relatable to developers, technical, shares learning resources and dev moments',
+    hashtags: '#Coding #100DaysOfCode #WebDev #SoftwareEngineering',
   },
 };
 
