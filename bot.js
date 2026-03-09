@@ -20,13 +20,16 @@ const CONFIG = {
 
 // ─── ALL VIRAL NICHES ────────────────────────────────────────────
 const CATEGORIES = [
+  { category: 'cricket', weight: 3, emoji: '🏏' },
+  { category: 'bollywood', weight: 3, emoji: '🎬' },
+  { category: 'india', weight: 2, emoji: '🇮🇳' },
   { category: 'tech', weight: 2, emoji: '💻' },
   { category: 'ai', weight: 2, emoji: '🤖' },
   { category: 'coding', weight: 2, emoji: '👨‍💻' },
   { category: 'crypto', weight: 2, emoji: '₿' },
   { category: 'business', weight: 2, emoji: '💰' },
   { category: 'motivation', weight: 2, emoji: '🔥' },
-  { category: 'entertainment', weight: 2, emoji: '🎬' },
+  { category: 'entertainment', weight: 2, emoji: '🎥' },
   { category: 'sports', weight: 2, emoji: '⚽' },
   { category: 'science', weight: 2, emoji: '🔬' },
   { category: 'world', weight: 2, emoji: '🌍' },
@@ -97,6 +100,27 @@ const FEEDS = {
     'https://kotaku.com/rss',
     'https://www.polygon.com/rss/index.xml',
   ],
+  cricket: [
+    'https://www.espncricinfo.com/rss/content/story/feeds/0.xml',
+    'https://feeds.bbci.co.uk/sport/cricket/rss.xml',
+    'https://sportstar.thehindu.com/cricket/feeder/default.rss',
+    'https://timesofindia.indiatimes.com/rssfeeds/54829575.cms',
+    'https://indianexpress.com/section/sports/cricket/feed/',
+  ],
+  bollywood: [
+    'https://timesofindia.indiatimes.com/rssfeeds/1081479906.cms',
+    'https://www.bollywoodhungama.com/feed/',
+    'https://www.pinkvilla.com/feed',
+    'https://indianexpress.com/section/entertainment/bollywood/feed/',
+    'https://www.ndtv.com/rss/entertainment',
+  ],
+  india: [
+    'https://timesofindia.indiatimes.com/rssfeeds/-2128936835.cms',
+    'https://indianexpress.com/feed/',
+    'https://feeds.bbci.co.uk/news/world/asia/india/rss.xml',
+    'https://www.ndtv.com/rss/india',
+    'https://www.thehindu.com/news/national/feeder/default.rss',
+  ],
 };
 
 // ─── VIRAL AI PERSONAS ───────────────────────────────────────────
@@ -161,6 +185,24 @@ const PERSONAS = {
     style: 'Hot takes on releases, nostalgia bait, "unpopular opinion" energy',
     hashtags: '#Gaming #Gamer #PlayStation #Xbox',
   },
+  cricket: {
+    voice: 'Passionate Indian cricket fan who lives and breathes IPL, WTC, and Team India',
+    style:
+      'Desi cricket banter, player comparisons, match predictions, "Kohli vs Rohit" debate energy, speaks like Indian cricket Twitter',
+    hashtags: '#Cricket #IPL #TeamIndia #CricketTwitter',
+  },
+  bollywood: {
+    voice: 'Bollywood insider who drops takes that get Bollywood Twitter buzzing',
+    style:
+      'Movie reviews in one line, celeb gossip hot takes, box office predictions, nostalgia posts about 90s/2000s films',
+    hashtags: '#Bollywood #BollywoodNews #Hindi #BoxOffice',
+  },
+  india: {
+    voice: 'Indian news commentator who makes desi audience engage and debate',
+    style:
+      'Indian politics hot takes, economy updates, startup ecosystem, "only Indians will understand" energy, uses Hinglish naturally',
+    hashtags: '#India #IndianNews #Bharat #MakeInIndia',
+  },
 };
 
 // ─── RSS PARSER ──────────────────────────────────────────────────
@@ -209,6 +251,12 @@ Suggested hashtags: ${persona.hashtags}
 
 Your ONLY goal: make posts that get MAXIMUM engagement (likes, retweets, replies, bookmarks).
 
+TARGET AUDIENCE: Indian users on X (Twitter India).
+- Use Hinglish casually where it feels natural (yaar, bhai, kya, etc.)
+- Reference Indian context when relevant (Indian companies, IPL, Bollywood, Indian politics, UPI, etc.)
+- Use India-specific trending topics and cultural references
+- Time references should be in IST
+
 Generate ${count} DIFFERENT short viral X posts about this news.
 
 VIRAL FORMULAS TO USE (pick different ones):
@@ -249,6 +297,12 @@ Suggested hashtags: ${persona.hashtags}
 
 Generate ${count} LONG-FORM X Premium post(s) about this news.
 These are the posts that go MEGA viral because they deliver VALUE.
+
+TARGET AUDIENCE: Indian users on X (Twitter India).
+- Use Hinglish naturally where it fits (yaar, bhai, accha, sach mein, etc.)
+- Reference Indian context, companies, culture when relevant
+- Make analogies using Indian examples (cricket scores, Bollywood dialogues, Indian startup ecosystem)
+- Time references should be in IST
 
 FORMAT RULES FOR LONG POSTS:
 - Use 800-2000 characters (use the space! short = wasted Premium)
@@ -364,7 +418,7 @@ function scoreTweet(tweet) {
 }
 
 // ─── MAIN RUN ────────────────────────────────────────────────────
-async function runBot() {
+async function runBot(selectedNiches) {
   const time = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
   console.log(`\n${'═'.repeat(55)}`);
   console.log(`🤖 VIRAL MACHINE | ${time} IST`);
@@ -372,7 +426,15 @@ async function runBot() {
 
   const allPosts = [];
 
-  for (const { category, weight, emoji } of CATEGORIES) {
+  // Filter categories if user selected specific niches
+  const activeCategories =
+    selectedNiches && selectedNiches.length > 0
+      ? CATEGORIES.filter((c) => selectedNiches.includes(c.category))
+      : CATEGORIES;
+
+  console.log(`📋 Active niches: ${activeCategories.map((c) => c.category).join(', ')}`);
+
+  for (const { category, weight, emoji } of activeCategories) {
     const postsTarget = weight * CONFIG.POSTS_PER_CATEGORY;
     console.log(`\n${emoji} [${category.toUpperCase()}] — targeting ${postsTarget} posts`);
 
@@ -434,4 +496,4 @@ async function runBot() {
   return allPosts;
 }
 
-module.exports = runBot;
+module.exports = { runBot, CATEGORIES };

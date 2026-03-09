@@ -265,6 +265,121 @@ body {
   font-weight: 500;
 }
 
+/* ─── NICHE SELECTOR FORM ───────────────────────────────── */
+.niche-form {
+  padding: 32px 0 8px;
+}
+
+.form-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.form-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.form-actions-top {
+  display: flex;
+  gap: 12px;
+}
+
+.btn-text {
+  background: none;
+  border: none;
+  color: var(--accent-light);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: var(--font);
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+
+.btn-text:hover {
+  background: rgba(108, 92, 231, 0.1);
+}
+
+.niche-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.niche-chip {
+  cursor: pointer;
+}
+
+.niche-chip input[type='checkbox'] {
+  display: none;
+}
+
+.chip-inner {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 50px;
+  border: 1px solid var(--border);
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+  transition: all 0.25s ease;
+  font-family: var(--font);
+  user-select: none;
+}
+
+.chip-inner:hover {
+  border-color: var(--accent);
+  color: var(--text-primary);
+}
+
+.niche-chip input:checked + .chip-inner {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  box-shadow: 0 2px 12px rgba(108, 92, 231, 0.3);
+}
+
+.chip-emoji {
+  font-size: 16px;
+}
+
+.form-footer {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.btn-outline {
+  padding: 10px 20px;
+  border-radius: 50px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.25s;
+  font-family: var(--font);
+}
+
+.btn-outline:hover {
+  border-color: var(--red);
+  color: var(--red);
+  background: rgba(253, 107, 107, 0.08);
+}
+
 /* ─── FILTER BAR ────────────────────────────────────────── */
 .filter-bar {
   display: flex;
@@ -310,6 +425,20 @@ body {
 .filter-btn-fire.active {
   background: linear-gradient(135deg, #fd6b6b, #e55039);
   border-color: var(--red);
+}
+
+.filter-btn-premium {
+  border-color: rgba(253, 203, 110, 0.3);
+}
+
+.filter-btn-premium:hover {
+  border-color: var(--orange);
+  background: rgba(253, 203, 110, 0.1);
+}
+
+.filter-btn-premium.active {
+  background: linear-gradient(135deg, var(--orange), #e17055);
+  border-color: var(--orange);
 }
 
 /* ─── POSTS GRID ────────────────────────────────────────── */
@@ -443,6 +572,18 @@ body {
   background: rgba(253, 121, 168, 0.12);
   color: var(--pink);
 }
+.badge-cricket {
+  background: rgba(255, 165, 0, 0.15);
+  color: #ff9f43;
+}
+.badge-bollywood {
+  background: rgba(232, 67, 147, 0.15);
+  color: #e84393;
+}
+.badge-india {
+  background: rgba(0, 184, 148, 0.15);
+  color: var(--green);
+}
 
 .badge-premium {
   background: linear-gradient(135deg, rgba(253, 203, 110, 0.3), rgba(255, 234, 167, 0.15));
@@ -485,6 +626,24 @@ body {
   color: var(--text-primary);
   flex: 1;
   word-break: break-word;
+}
+
+.post-text-long {
+  white-space: pre-wrap;
+  font-size: 14px;
+  line-height: 1.7;
+  max-height: 300px;
+  overflow-y: auto;
+  padding-right: 8px;
+}
+
+.post-text-long::-webkit-scrollbar {
+  width: 4px;
+}
+
+.post-text-long::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 4px;
 }
 
 .post-source {

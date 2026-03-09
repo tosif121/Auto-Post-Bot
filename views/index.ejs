@@ -24,22 +24,55 @@
           <span class="logo-icon">𝕏</span>
           <h1>Viral Machine</h1>
         </div>
-        <p class="tagline">AI-powered viral posts from every trending niche — copy &amp; post to X in one click</p>
-        <div class="header-actions">
-          <a href="/generate" id="generate-btn" class="btn btn-primary <% if (isGenerating) { %>btn-disabled<% } %>">
+        <p class="tagline">AI-powered viral posts from every trending niche — select, generate, copy &amp; post</p>
+      </div>
+    </div>
+  </header>
+
+  <!-- Niche Selector Form -->
+  <section class="container">
+    <form action="/generate" method="POST" id="generate-form" class="niche-form">
+      <div class="form-header">
+        <h2 class="form-title">Select Niches</h2>
+        <div class="form-actions-top">
+          <button type="button" class="btn-text" onclick="toggleAll(true)">Select All</button>
+          <button type="button" class="btn-text" onclick="toggleAll(false)">Clear All</button>
+        </div>
+      </div>
+      <div class="niche-grid">
+        <% categories.forEach(function(cat) { %>
+          <label class="niche-chip" data-cat="<%= cat.category %>">
+            <input type="checkbox" name="niches" value="<%= cat.category %>" <% if (lastSelectedNiches.length===0 ||
+              lastSelectedNiches.indexOf(cat.category) !==-1) { %>checked<% } %> />
+              <span class="chip-inner">
+                <span class="chip-emoji">
+                  <%= cat.emoji %>
+                </span>
+                <span class="chip-name">
+                  <%= cat.category.charAt(0).toUpperCase() + cat.category.slice(1) %>
+                </span>
+              </span>
+          </label>
+          <% }); %>
+      </div>
+      <div class="form-footer">
+        <button type="submit" class="btn btn-primary <% if (isGenerating) { %>btn-disabled<% } %>" <% if (isGenerating)
+          { %>disabled<% } %>>
             <% if (isGenerating) { %>
               <span class="spinner"></span> Generating…
               <% } else { %>
                 <span class="btn-icon">⚡</span> Generate Posts
                 <% } %>
-          </a>
-          <% if (lastRunTime) { %>
-            <span class="last-run">Last run: <%= lastRunTime %></span>
-            <% } %>
-        </div>
+        </button>
+        <% if (lastRunTime) { %>
+          <span class="last-run">Last run: <%= lastRunTime %></span>
+          <% } %>
+            <% if (posts.length> 0) { %>
+              <a href="/clear" class="btn btn-outline">🗑️ Clear All</a>
+              <% } %>
       </div>
-    </div>
-  </header>
+    </form>
+  </section>
 
   <!-- Stats Bar -->
   <% if (posts.length> 0) { %>
@@ -59,9 +92,9 @@
         </div>
         <div class="stat-card">
           <span class="stat-number">
-            <%= posts.filter(function(p){ return p.score==='✅ Strong' ; }).length %>
+            <%= posts.filter(function(p){ return p.type==='premium' ; }).length %>
           </span>
-          <span class="stat-label">✅ Strong</span>
+          <span class="stat-label">📝 Premium</span>
         </div>
         <div class="stat-card">
           <% var nicheSet=[]; posts.forEach(function(p){ if (nicheSet.indexOf(p.category)===-1)
@@ -88,6 +121,7 @@
                 </button>
                 <% }); %>
                   <button class="filter-btn filter-btn-fire" data-filter="🔥 Viral">🔥 Viral Only</button>
+                  <button class="filter-btn filter-btn-premium" data-filter="premium">📝 Premium Only</button>
           </div>
         </section>
         <% } %>
@@ -98,8 +132,8 @@
               <div class="empty-state">
                 <div class="empty-icon">🚀</div>
                 <h2>Ready to go viral?</h2>
-                <p>Click <strong>"Generate Posts"</strong> to create AI-powered viral posts across 12 niches — tech,
-                  crypto, sports, entertainment, and more.</p>
+                <p>Select your niches above and click <strong>"Generate Posts"</strong> to create AI-powered viral
+                  posts.</p>
               </div>
               <% } %>
 
@@ -107,14 +141,14 @@
                   <div class="empty-state">
                     <div class="empty-icon spinner-large">⚡</div>
                     <h2>Generating viral posts…</h2>
-                    <p>Scanning RSS feeds across 12 niches and crafting scroll-stopping posts. This takes ~1-2 minutes.
-                    </p>
+                    <p>Scanning RSS feeds and crafting scroll-stopping posts. This takes ~1-2 minutes.</p>
                   </div>
                   <% } %>
 
                     <div class="posts-grid">
                       <% posts.forEach(function(post, index) { %>
-                        <div class="post-card" data-category="<%= post.category %>" data-score="<%= post.score %>">
+                        <div class="post-card" data-category="<%= post.category %>" data-score="<%= post.score %>"
+                          data-type="<%= post.type %>">
                           <div class="post-header">
                             <div class="post-meta">
                               <span class="badge badge-<%= post.category %>">
@@ -131,7 +165,7 @@
                               <%= post.charCount %> chars
                             </span>
                           </div>
-                          <p class="post-text">
+                          <p class="post-text <% if (post.type === 'premium') { %>post-text-long<% } %>">
                             <%= post.tweet %>
                           </p>
                           <div class="post-source">
@@ -162,11 +196,20 @@
           <!-- Footer -->
           <footer class="footer">
             <div class="container">
-              <p>X Viral Machine &bull; AI-powered by OpenRouter &bull; 12 Niches &bull; Built for 5M+ impressions</p>
+              <p>X Viral Machine &bull; AI-powered by OpenRouter &bull; 15 Niches &bull; Built for 5M+ impressions 🇮🇳
+              </p>
             </div>
           </footer>
 
           <script>
+            // Toggle all checkboxes
+            function toggleAll(state) {
+              document.querySelectorAll('.niche-chip input[type="checkbox"]').forEach(function (cb) {
+                cb.checked = state;
+              });
+            }
+
+            // Copy to clipboard
             function copyPost(btn) {
               var tweet = btn.getAttribute('data-tweet');
               navigator.clipboard.writeText(tweet).then(function () {
@@ -184,6 +227,7 @@
               });
             }
 
+            // Filter posts
             document.querySelectorAll('.filter-btn').forEach(function (btn) {
               btn.addEventListener('click', function () {
                 document.querySelectorAll('.filter-btn').forEach(function (b) { b.classList.remove('active'); });
@@ -193,6 +237,8 @@
                 document.querySelectorAll('.post-card').forEach(function (card) {
                   if (filter === 'all') {
                     card.style.display = '';
+                  } else if (filter === 'premium') {
+                    card.style.display = card.dataset.type === 'premium' ? '' : 'none';
                   } else if (filter.indexOf('🔥') === 0) {
                     card.style.display = card.dataset.score === filter ? '' : 'none';
                   } else {
@@ -202,6 +248,7 @@
               });
             });
 
+    // Auto-reload if generating
     <% if (isGenerating) { %>
               setTimeout(function () { window.location.reload(); }, 5000);
     <% } %>

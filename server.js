@@ -1,6 +1,6 @@
 // ================================================================
 //  X Post Generator — Local Server
-//  Run: node server.js   →   Open: http://localhost:3000
+//  Run: npm run dev   →   Open: http://localhost:3000
 // ================================================================
 
 'use strict';
@@ -8,7 +8,7 @@
 require('dotenv').config();
 const express = require('express');
 const path = require('path');
-const runBot = require('./bot');
+const { runBot, CATEGORIES } = require('./bot');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -17,13 +17,15 @@ const PORT = process.env.PORT || 3000;
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
-// Static files
+// Static files & form parsing
 app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.urlencoded({ extended: true }));
 
-// In-memory store for generated posts
+// In-memory store
 let generatedPosts = [];
 let lastRunTime = null;
 let isGenerating = false;
+let lastSelectedNiches = [];
 
 // ─── Helper: escape tweet for HTML attribute ────────────────────
 function escapeForAttr(str) {
@@ -37,7 +39,6 @@ function escapeForAttr(str) {
 
 // ─── HOME PAGE ───────────────────────────────────────────────────
 app.get('/', (req, res) => {
-  // Pre-escape tweets for safe HTML attribute embedding
   const postsWithEscaped = generatedPosts.map((p) => ({
     ...p,
     tweetEscaped: escapeForAttr(p.tweet),
@@ -45,21 +46,29 @@ app.get('/', (req, res) => {
 
   res.render('index', {
     posts: postsWithEscaped,
+    categories: CATEGORIES,
     lastRunTime,
     isGenerating,
+    lastSelectedNiches,
   });
 });
 
-// ─── GENERATE (trigger bot) ─────────────────────────────────────
-app.get('/generate', async (req, res) => {
+// ─── GENERATE (POST with niche selection) ────────────────────────
+app.post('/generate', async (req, res) => {
   if (isGenerating) {
     return res.redirect('/');
   }
 
+  // Get selected niches from form (checkboxes)
+  let selectedNiches = req.body.niches || [];
+  if (typeof selectedNiches === 'string') selectedNiches = [selectedNiches];
+  lastSelectedNiches = selectedNiches;
+
   isGenerating = true;
   try {
-    const posts = await runBot();
-    generatedPosts = posts;
+    const posts = await runBot(selectedNiches);
+    // Append to existing posts (don't overwrite)
+    generatedPosts = [...posts, ...generatedPosts];
     lastRunTime = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
   } catch (err) {
     console.error('Bot run failed:', err);
@@ -70,8 +79,15 @@ app.get('/generate', async (req, res) => {
   res.redirect('/');
 });
 
+// ─── CLEAR ALL POSTS ─────────────────────────────────────────────
+app.get('/clear', (req, res) => {
+  generatedPosts = [];
+  lastRunTime = null;
+  res.redirect('/');
+});
+
 // ─── START SERVER ────────────────────────────────────────────────
 app.listen(PORT, () => {
   console.log(`\n🚀 X Post Generator running at http://localhost:${PORT}`);
-  console.log(`   Click "Generate Posts" in the browser to start!\n`);
+  console.log(`   Select your niches and click "Generate" to start!\n`);
 });
