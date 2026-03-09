@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>X Post Generator — Viral Machine</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/style.css" />
+</head>
+
+<body>
+  <!-- Toast -->
+  <div id="toast" class="toast">✅ Copied to clipboard!</div>
+
+  <!-- Header -->
+  <header class="header">
+    <div class="header-glow"></div>
+    <div class="container">
+      <div class="header-content">
+        <div class="logo">
+          <span class="logo-icon">𝕏</span>
+          <h1>Viral Machine</h1>
+        </div>
+        <p class="tagline">AI-powered viral posts from every trending niche — copy &amp; post to X in one click</p>
+        <div class="header-actions">
+          <a href="/generate" id="generate-btn" class="btn btn-primary <% if (isGenerating) { %>btn-disabled<% } %>">
+            <% if (isGenerating) { %>
+              <span class="spinner"></span> Generating…
+              <% } else { %>
+                <span class="btn-icon">⚡</span> Generate Posts
+                <% } %>
+          </a>
+          <% if (lastRunTime) { %>
+            <span class="last-run">Last run: <%= lastRunTime %></span>
+            <% } %>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Stats Bar -->
+  <% if (posts.length> 0) { %>
+    <section class="stats-bar">
+      <div class="container stats-grid">
+        <div class="stat-card">
+          <span class="stat-number">
+            <%= posts.length %>
+          </span>
+          <span class="stat-label">Total Posts</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-number">
+            <%= posts.filter(function(p){ return p.score==='🔥 Viral' ; }).length %>
+          </span>
+          <span class="stat-label">🔥 Viral</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-number">
+            <%= posts.filter(function(p){ return p.score==='✅ Strong' ; }).length %>
+          </span>
+          <span class="stat-label">✅ Strong</span>
+        </div>
+        <div class="stat-card">
+          <% var nicheSet=[]; posts.forEach(function(p){ if (nicheSet.indexOf(p.category)===-1)
+            nicheSet.push(p.category); }); %>
+            <span class="stat-number">
+              <%= nicheSet.length %>
+            </span>
+            <span class="stat-label">Niches</span>
+        </div>
+      </div>
+    </section>
+    <% } %>
+
+      <!-- Filter Tabs -->
+      <% if (posts.length> 0) { %>
+        <section class="container">
+          <div class="filter-bar">
+            <button class="filter-btn active" data-filter="all">All</button>
+            <% var catSet=[]; posts.forEach(function(p){ if (catSet.indexOf(p.category)===-1) catSet.push(p.category);
+              }); %>
+              <% catSet.forEach(function(cat) { %>
+                <button class="filter-btn" data-filter="<%= cat %>">
+                  <%= cat.charAt(0).toUpperCase() + cat.slice(1) %>
+                </button>
+                <% }); %>
+                  <button class="filter-btn filter-btn-fire" data-filter="🔥 Viral">🔥 Viral Only</button>
+          </div>
+        </section>
+        <% } %>
+
+          <!-- Post Cards -->
+          <main class="container">
+            <% if (posts.length===0 && !isGenerating) { %>
+              <div class="empty-state">
+                <div class="empty-icon">🚀</div>
+                <h2>Ready to go viral?</h2>
+                <p>Click <strong>"Generate Posts"</strong> to create AI-powered viral posts across 12 niches — tech,
+                  crypto, sports, entertainment, and more.</p>
+              </div>
+              <% } %>
+
+                <% if (isGenerating) { %>
+                  <div class="empty-state">
+                    <div class="empty-icon spinner-large">⚡</div>
+                    <h2>Generating viral posts…</h2>
+                    <p>Scanning RSS feeds across 12 niches and crafting scroll-stopping posts. This takes ~1-2 minutes.
+                    </p>
+                  </div>
+                  <% } %>
+
+                    <div class="posts-grid">
+                      <% posts.forEach(function(post, index) { %>
+                        <div class="post-card" data-category="<%= post.category %>" data-score="<%= post.score %>">
+                          <div class="post-header">
+                            <div class="post-meta">
+                              <span class="badge badge-<%= post.category %>">
+                                <%= post.category %>
+                              </span>
+                              <% if (post.type==='premium' ) { %><span class="badge badge-premium">PREMIUM</span>
+                                <% } %>
+                                  <span
+                                    class="badge badge-score <% if (post.score === '🔥 Viral') { %>badge-viral<% } %>">
+                                    <%= post.score %>
+                                  </span>
+                            </div>
+                            <span class="char-count">
+                              <%= post.charCount %> chars
+                            </span>
+                          </div>
+                          <p class="post-text">
+                            <%= post.tweet %>
+                          </p>
+                          <div class="post-source">
+                            <span class="source-label">Source:</span>
+                            <span class="source-text">
+                              <%= post.headline %>
+                            </span>
+                          </div>
+                          <div class="post-footer">
+                            <span class="post-time">
+                              <%= new Date(post.generatedAt).toLocaleTimeString('en-IN', { hour: '2-digit' ,
+                                minute: '2-digit' }) %>
+                            </span>
+                            <button class="btn-copy" onclick="copyPost(this)" data-tweet="<%- post.tweetEscaped %>">
+                              <svg class="copy-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <rect x="9" y="9" width="13" height="13" rx="2" />
+                                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                              </svg>
+                              Copy
+                            </button>
+                          </div>
+                        </div>
+                        <% }); %>
+                    </div>
+          </main>
+
+          <!-- Footer -->
+          <footer class="footer">
+            <div class="container">
+              <p>X Viral Machine &bull; AI-powered by OpenRouter &bull; 12 Niches &bull; Built for 5M+ impressions</p>
+            </div>
+          </footer>
+
+          <script>
+            function copyPost(btn) {
+              var tweet = btn.getAttribute('data-tweet');
+              navigator.clipboard.writeText(tweet).then(function () {
+                btn.innerHTML = '<svg class="copy-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Copied!';
+                btn.classList.add('copied');
+
+                var toast = document.getElementById('toast');
+                toast.classList.add('show');
+                setTimeout(function () { toast.classList.remove('show'); }, 2000);
+
+                setTimeout(function () {
+                  btn.innerHTML = '<svg class="copy-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copy';
+                  btn.classList.remove('copied');
+                }, 2500);
+              });
+            }
+
+            document.querySelectorAll('.filter-btn').forEach(function (btn) {
+              btn.addEventListener('click', function () {
+                document.querySelectorAll('.filter-btn').forEach(function (b) { b.classList.remove('active'); });
+                btn.classList.add('active');
+
+                var filter = btn.getAttribute('data-filter');
+                document.querySelectorAll('.post-card').forEach(function (card) {
+                  if (filter === 'all') {
+                    card.style.display = '';
+                  } else if (filter.indexOf('🔥') === 0) {
+                    card.style.display = card.dataset.score === filter ? '' : 'none';
+                  } else {
+                    card.style.display = card.dataset.category === filter ? '' : 'none';
+                  }
+                });
+              });
+            });
+
+    <% if (isGenerating) { %>
+              setTimeout(function () { window.location.reload(); }, 5000);
+    <% } %>
+          </script>
+</body>
+
+</html>

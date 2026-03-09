@@ -1,17 +1,20 @@
 {
   "name": "x-post-generator",
-  "version": "3.0.0",
-  "description": "Hourly X post generator → Notion CMS",
-  "main": "bot.js",
+  "version": "4.0.0",
+  "description": "Viral X post generator — Local EJS UI with copy button",
+  "main": "server.js",
   "scripts": {
-    "start": "node -e \"require('./bot')()\"",
-    "setup-notion": "node setup-notion.js",
-    "dev": "node -e \"require('./bot')()\""
+    "start": "node server.js",
+    "dev": "nodemon server.js"
   },
   "dependencies": {
-    "@notionhq/client": "^2.2.15",
     "dotenv": "^16.4.5",
+    "ejs": "^3.1.10",
+    "express": "^4.21.0",
     "node-fetch": "^2.7.0",
     "rss-parser": "^3.13.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.0"
   }
 }
