@@ -427,10 +427,9 @@ async function runBot(selectedNiches) {
   const allPosts = [];
 
   // Filter categories if user selected specific niches
-  const activeCategories =
-    selectedNiches && selectedNiches.length > 0
-      ? CATEGORIES.filter((c) => selectedNiches.includes(c.category))
-      : CATEGORIES;
+  const activeCategories = Array.isArray(selectedNiches)
+    ? CATEGORIES.filter((c) => selectedNiches.includes(c.category))
+    : CATEGORIES;
 
   console.log(`📋 Active niches: ${activeCategories.map((c) => c.category).join(', ')}`);
 

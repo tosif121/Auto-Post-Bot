@@ -67,8 +67,8 @@ app.post('/generate', async (req, res) => {
   isGenerating = true;
   try {
     const posts = await runBot(selectedNiches);
-    // Append to existing posts (don't overwrite)
-    generatedPosts = [...posts, ...generatedPosts];
+    // Replace existing posts with only the newly generated ones
+    generatedPosts = posts;
     lastRunTime = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
   } catch (err) {
     console.error('Bot run failed:', err);
